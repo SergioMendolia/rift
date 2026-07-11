@@ -1,0 +1,14 @@
+services:
+  rift:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/app/data
+      - ./themes:/app/data/themes
+    environment:
+      - JWT_SECRET=changeme-please
+      - POLL_CRON=*/30 * * * *
+      # - OIDC_ISSUER=
+      # - OIDC_CLIENT_ID=
+      # - OIDC_CLIENT_SECRET=

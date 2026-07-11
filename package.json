@@ -1,0 +1,17 @@
+{
+  "name": "rift",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["server", "client", "packages/shared"],
+  "scripts": {
+    "dev": "bun run dev:server & bun run dev:client",
+    "dev:server": "bun --filter rift-server dev",
+    "dev:client": "bun --filter rift-client dev",
+    "build:client": "bun --filter rift-client build",
+    "start": "bun run server/src/index.ts",
+    "db:generate": "bun --filter rift-server db:generate",
+    "db:migrate": "bun --filter rift-server db:migrate",
+    "test": "bun test"
+  }
+}
