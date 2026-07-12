@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { useFeedsStore } from "../../stores/feeds";
 import { useArticlesStore, type ArticleFilter } from "../../stores/articles";
 import { useAuthStore } from "../../stores/auth";
+import { filterPath } from "../../composables/useNav";
 import type { FeedDTO } from "@rift/shared";
 import AddFeedDialog from "../feed/AddFeedDialog.vue";
 import EditFeedDialog from "../feed/EditFeedDialog.vue";
@@ -14,13 +15,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggleFolder: [id: number];
-  selectFilter: [filter: ArticleFilter];
 }>();
 
 const feedsStore = useFeedsStore();
 const articlesStore = useArticlesStore();
 const auth = useAuthStore();
 const router = useRouter();
+const route = useRoute();
 
 const currentFilter = computed(() => articlesStore.currentFilter);
 
@@ -38,6 +39,10 @@ function isActive(filter: ArticleFilter): boolean {
 
 function goSettings() {
   router.push("/settings");
+}
+
+function goFilter(filter: ArticleFilter) {
+  router.push(filterPath(filter));
 }
 
 function logout() {
@@ -116,7 +121,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
         <div
           class="sidebar-item"
           :class="{ active: isActive({ type: 'all' }) }"
-          @click="emit('selectFilter', { type: 'all' })"
+          @click="goFilter({ type: 'all' })"
         >
           <span class="icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -129,7 +134,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
         <div
           class="sidebar-item"
           :class="{ active: isActive({ type: 'saved' }) }"
-          @click="emit('selectFilter', { type: 'saved' })"
+          @click="goFilter({ type: 'saved' })"
         >
           <span class="icon">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -201,7 +206,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
                 <path d="M7 10l5 5 5-5z" />
               </svg>
             </span>
-            <span class="label" @click="emit('selectFilter', { type: 'folder', folderId: folder.id })">{{ folder.name }}</span>
+            <span class="label" @click="goFilter({ type: 'folder', folderId: folder.id })">{{ folder.name }}</span>
             <span class="feed-actions">
               <button class="btn btn-ghost feed-action-btn" title="Rename folder" @click="startRenameFolder(folder.id, folder.name, $event)">
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -227,7 +232,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
               <div
                 class="sidebar-feed"
                 :class="{ active: isActive({ type: 'feed', feedId: feed.id }) }"
-                @click="emit('selectFilter', { type: 'feed', feedId: feed.id })"
+                @click="goFilter({ type: 'feed', feedId: feed.id })"
               >
                 <img
                   v-if="feed.faviconUrl"
@@ -264,7 +269,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
             class="sidebar-feed"
             :class="{ active: isActive({ type: 'feed', feedId: feed.id }) }"
             style="padding-left: var(--spacing-md);"
-            @click="emit('selectFilter', { type: 'feed', feedId: feed.id })"
+            @click="goFilter({ type: 'feed', feedId: feed.id })"
           >
             <img
               v-if="feed.faviconUrl"

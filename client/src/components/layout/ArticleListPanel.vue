@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
+import { useRouter, useRoute } from "vue-router";
 import { useArticlesStore } from "../../stores/articles";
 import { useFeedsStore } from "../../stores/feeds";
 import { useFormatDate } from "../../composables/useFormatDate";
+import { filterFromRoute, filterArticlePath } from "../../composables/useNav";
 
 const props = defineProps<{
   showBack?: boolean;
 }>();
 
 const emit = defineEmits<{
-  selectArticle: [id: number];
   showSidebar: [];
 }>();
 
 const articlesStore = useArticlesStore();
 const feedsStore = useFeedsStore();
+const router = useRouter();
+const route = useRoute();
 const { formatDate } = useFormatDate();
 
 const articles = computed(() => articlesStore.articles);
@@ -98,6 +101,11 @@ function loadMore() {
   articlesStore.loadArticles(false);
 }
 
+function selectArticle(articleId: number) {
+  const filter = filterFromRoute(route.name as string, route.params as Record<string, string>);
+  router.push(filterArticlePath(filter, articleId));
+}
+
 async function refreshAll() {
   await feedsStore.refreshAll();
   await articlesStore.loadArticles(true);
@@ -168,7 +176,7 @@ async function refreshAll() {
           class="article-card"
           :class="{ read: article.read, active: articlesStore.currentArticle?.id === article.id, 'swipe-active': swipeId === article.id }"
           :style="swipeId === article.id ? { transform: `translateX(${swipeOffset}px)` } : {}"
-          @click="swipeId === article.id ? null : emit('selectArticle', article.id)"
+          @click="swipeId === article.id ? null : selectArticle(article.id)"
         >
           <div class="feed-name">{{ article.feedTitle }}</div>
           <div class="title">{{ article.title }}</div>

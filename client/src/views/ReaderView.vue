@@ -1,13 +1,17 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import { useFeedsStore } from "../stores/feeds";
 import { useArticlesStore, type ArticleFilter } from "../stores/articles";
 import { useSettingsStore } from "../stores/settings";
 import { useAuthStore } from "../stores/auth";
+import { filterFromRoute, articleIdFromRoute, filterArticlePath, filterPath } from "../composables/useNav";
 import Sidebar from "../components/layout/Sidebar.vue";
 import ArticleListPanel from "../components/layout/ArticleListPanel.vue";
 import ArticleViewPanel from "../components/layout/ArticleViewPanel.vue";
 
+const route = useRoute();
+const router = useRouter();
 const feedsStore = useFeedsStore();
 const articlesStore = useArticlesStore();
 const settingsStore = useSettingsStore();
@@ -23,11 +27,6 @@ function isMobile() {
   return window.innerWidth <= 768;
 }
 
-function selectFilter(filter: ArticleFilter) {
-  articlesStore.setFilter(filter);
-  if (isMobile()) mobilePane.value = "list";
-}
-
 function toggleFolder(id: number) {
   if (collapsedFolders.value.has(id)) {
     collapsedFolders.value.delete(id);
@@ -36,35 +35,53 @@ function toggleFolder(id: number) {
   }
 }
 
-function selectArticle(articleId: number) {
-  articlesStore.loadArticle(articleId);
-  if (isMobile()) mobilePane.value = "article";
-}
-
 function showSidebar() {
   mobilePane.value = "sidebar";
 }
 
 function backToList() {
-  mobilePane.value = "list";
+  const filter = filterFromRoute(route.name as string, route.params as Record<string, string>);
+  router.push(filterPath(filter));
 }
 
 function nextArticle() {
   const articles = articlesStore.articles;
   const currentIdx = articles.findIndex((a) => a.id === currentArticle.value?.id);
   if (currentIdx >= 0 && currentIdx < articles.length - 1) {
-    selectArticle(articles[currentIdx + 1].id);
+    const filter = filterFromRoute(route.name as string, route.params as Record<string, string>);
+    const nextId = articles[currentIdx + 1].id;
+    navigateToArticle(filter, nextId);
   }
 }
 
-watch(() => articlesStore.currentArticle, (article) => {
-  if (isMobile() && article) mobilePane.value = "article";
-});
+function navigateToArticle(filter: ArticleFilter, articleId: number) {
+  router.push(filterArticlePath(filter, articleId));
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    const filter = filterFromRoute(route.name as string, route.params as Record<string, string>);
+    const articleId = articleIdFromRoute(route.params as Record<string, string>);
+
+    if (JSON.stringify(filter) !== JSON.stringify(articlesStore.currentFilter)) {
+      articlesStore.setFilter(filter);
+    }
+
+    if (articleId !== null) {
+      articlesStore.loadArticle(articleId);
+      if (isMobile()) mobilePane.value = "article";
+    } else {
+      articlesStore.currentArticle = null;
+      if (isMobile()) mobilePane.value = "list";
+    }
+  },
+  { immediate: true },
+);
 
 onMounted(async () => {
   await feedsStore.fetchFeeds();
   await feedsStore.fetchFolders();
-  await articlesStore.loadArticles(true);
 });
 
 function handleKeydown(e: KeyboardEvent) {
@@ -77,13 +94,15 @@ function handleKeydown(e: KeyboardEvent) {
     e.preventDefault();
     const nextIdx = Math.min(currentIdx + 1, articles.length - 1);
     if (nextIdx !== currentIdx && nextIdx < articles.length) {
-      selectArticle(articles[nextIdx].id);
+      const filter = filterFromRoute(route.name as string, route.params as Record<string, string>);
+      navigateToArticle(filter, articles[nextIdx].id);
     }
   } else if (e.key === "k" || e.key === "ArrowUp") {
     e.preventDefault();
     const prevIdx = Math.max(currentIdx - 1, 0);
     if (prevIdx !== currentIdx) {
-      selectArticle(articles[prevIdx].id);
+      const filter = filterFromRoute(route.name as string, route.params as Record<string, string>);
+      navigateToArticle(filter, articles[prevIdx].id);
     }
   } else if (e.key === "s") {
     e.preventDefault();
@@ -110,12 +129,10 @@ function handleKeydown(e: KeyboardEvent) {
       :collapsed-folders="collapsedFolders"
       :class="{ 'mobile-hidden': isMobile() && mobilePane !== 'sidebar' }"
       @toggle-folder="toggleFolder"
-      @select-filter="selectFilter"
     />
     <ArticleListPanel
       :class="{ 'mobile-hidden': isMobile() && mobilePane !== 'list' }"
       :show-back="isMobile() && mobilePane === 'list'"
-      @select-article="selectArticle"
       @show-sidebar="showSidebar"
     />
     <ArticleViewPanel

@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
 import { useAuthStore } from "./stores/auth";
 
-const routes = [
+const routes: RouteRecordRaw[] = [
   {
     path: "/login",
     name: "login",
@@ -15,10 +15,56 @@ const routes = [
     meta: { public: true },
   },
   {
-    path: "/",
-    name: "reader",
+    path: "/all",
+    name: "reader-all",
     component: () => import("./views/ReaderView.vue"),
     meta: { requiresAuth: true },
+  },
+  {
+    path: "/all/article/:articleId",
+    name: "reader-all-article",
+    component: () => import("./views/ReaderView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/saved",
+    name: "reader-saved",
+    component: () => import("./views/ReaderView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/saved/article/:articleId",
+    name: "reader-saved-article",
+    component: () => import("./views/ReaderView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/feed/:feedId",
+    name: "reader-feed",
+    component: () => import("./views/ReaderView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/feed/:feedId/article/:articleId",
+    name: "reader-feed-article",
+    component: () => import("./views/ReaderView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/folder/:folderId",
+    name: "reader-folder",
+    component: () => import("./views/ReaderView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/folder/:folderId/article/:articleId",
+    name: "reader-folder-article",
+    component: () => import("./views/ReaderView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: "/",
+    redirect: { name: "reader-all" },
   },
   {
     path: "/settings",
@@ -48,7 +94,7 @@ router.beforeEach(async (to) => {
       return { name: "login" };
     }
     if (to.name === "login" && auth.user) {
-      return { name: "reader" };
+      return { name: "reader-all" };
     }
     return true;
   }

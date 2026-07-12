@@ -21,6 +21,12 @@ No `lint`, `format`, or `typecheck` script exists. Client build runs `vue-tsc --
 
 `bun` is required — the server uses `bun:sqlite`, `Bun.password`, `Bun.cron`, `Bun.file`. Don't run server code or tests under node.
 
+## Rules
+
+- **Always run tests after making changes.** Run `bun run test` before considering a task complete. If tests fail, fix them before finishing.
+- **Add tests for new features and bug fixes.** Every new function, route, store action, composable, or component behavior should have corresponding test coverage. Follow the patterns in the existing test files (mock `db/connection` for server tests, mock `fetch` + use `setActivePinia` for client tests).
+- **Run `bun run build:client` after client changes** to catch type errors (it runs `vue-tsc --noEmit`).
+
 ## Architecture
 
 - **Entry**: `server/src/index.ts` builds the Hono app, runs migrations at startup, registers `Bun.cron` feed polling, serves `client/dist` + SPA fallback.
