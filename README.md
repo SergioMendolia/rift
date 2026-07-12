@@ -5,7 +5,7 @@ A clean, efficient, self-hostable RSS reader.
 ## Features
 
 - Multi-user accounts (admin-created)
-- Feed subscription with OPML import/export
+- Feed subscription
 - Folders for organizing feeds
 - Read/unread state, save for later
 - Tags
@@ -41,6 +41,7 @@ bun start
 
 # Or run dev mode (server + client separately)
 bun run dev:server  # in one terminal
+DB_PATH=./data/rift.db bun run dev:server
 bun run dev:client  # in another terminal
 ```
 

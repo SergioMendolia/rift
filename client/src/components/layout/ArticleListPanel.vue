@@ -48,15 +48,28 @@ function loadMore() {
   <div class="article-list">
     <div class="article-list-header">
       <h2>{{ headerTitle }}</h2>
-      <button
-        class="btn btn-ghost btn-icon"
-        title="Refresh all feeds"
-        @click="feedsStore.refreshAll()"
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 2v6h-6M3 22v-6h6M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16" />
-        </svg>
-      </button>
+      <div style="display: flex; gap: 2px; align-items: center;">
+        <button
+          class="btn btn-ghost btn-icon"
+          :class="{ 'btn-primary': !articlesStore.hideRead }"
+          :title="articlesStore.hideRead ? 'Showing unread only — click to show all' : 'Showing all — click to hide read'"
+          @click="articlesStore.setHideRead(!articlesStore.hideRead)"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+        <button
+          class="btn btn-ghost btn-icon"
+          title="Refresh all feeds"
+          @click="feedsStore.refreshAll()"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2v6h-6M3 22v-6h6M3 12a9 9 0 0 1 15-6.7L21 8M21 12a9 9 0 0 1-15 6.7L3 16" />
+          </svg>
+        </button>
+      </div>
     </div>
     <div class="article-list-content">
       <div v-if="articles.length === 0 && !articlesStore.loading" class="empty-state">

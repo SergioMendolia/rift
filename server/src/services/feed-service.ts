@@ -174,7 +174,7 @@ async function storeArticles(feedId: number, items: any[]): Promise<number> {
       link: item.link ?? "",
       author: item.creator ?? item.author ?? null,
       summary: item.contentSnippet ?? item.summary ?? null,
-      content: item.content ?? item["content:encoded"] ?? null,
+      content: item["content:encoded"] ?? item.content ?? null,
       publishedAt: item.isoDate ?? item.pubDate ?? new Date().toISOString(),
     });
     newCount++;

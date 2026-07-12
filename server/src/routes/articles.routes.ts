@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, and, desc, lt, sql } from "drizzle-orm";
+import { eq, and, asc, gt, sql } from "drizzle-orm";
 import { db, schema } from "../db/connection";
 import { requireAuth } from "../middleware";
 import type { ArticleDTO, ArticleListResponse, UpdateArticleRequest } from "@rift/shared";
@@ -18,23 +18,10 @@ articleRoutes.get("/", async (c) => {
   const folderId = c.req.query("folderId");
   const read = c.req.query("read");
   const saved = c.req.query("saved");
+  const hideRead = c.req.query("hideRead") !== "false";
   const tagId = c.req.query("tagId");
   const cursor = c.req.query("cursor");
   const limit = Math.min(parseInt(c.req.query("limit") ?? "50", 10), 100);
-
-  let query = db
-    .select({
-      article: schema.articles,
-      userArticle: schema.userArticles,
-      feedTitle: schema.feeds.title,
-    })
-    .from(schema.userArticles)
-    .innerJoin(schema.articles, eq(schema.userArticles.articleId, schema.articles.id))
-    .innerJoin(schema.feeds, eq(schema.articles.feedId, schema.feeds.id))
-    .where(eq(schema.userArticles.userId, user.id))
-    .orderBy(desc(schema.articles.publishedAt))
-    .limit(limit + 1)
-    .as("q");
 
   const conditions = [eq(schema.userArticles.userId, user.id)];
 
@@ -57,6 +44,8 @@ articleRoutes.get("/", async (c) => {
     conditions.push(eq(schema.userArticles.read, true));
   } else if (read === "false") {
     conditions.push(eq(schema.userArticles.read, false));
+  } else if (hideRead) {
+    conditions.push(eq(schema.userArticles.read, false));
   }
 
   if (saved === "true") {
@@ -68,7 +57,7 @@ articleRoutes.get("/", async (c) => {
       where: eq(schema.articles.id, parseInt(cursor, 10)),
     });
     if (cursorArticle) {
-      conditions.push(lt(schema.articles.publishedAt, cursorArticle.publishedAt));
+      conditions.push(gt(schema.articles.publishedAt, cursorArticle.publishedAt));
     }
   }
 
@@ -82,7 +71,7 @@ articleRoutes.get("/", async (c) => {
     .innerJoin(schema.articles, eq(schema.userArticles.articleId, schema.articles.id))
     .innerJoin(schema.feeds, eq(schema.articles.feedId, schema.feeds.id))
     .where(and(...conditions))
-    .orderBy(desc(schema.articles.publishedAt))
+    .orderBy(asc(schema.articles.publishedAt))
     .limit(limit + 1)
     .all();
 

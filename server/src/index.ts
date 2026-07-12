@@ -11,9 +11,11 @@ import { folderRoutes } from "./routes/folders.routes";
 import { feedRoutes } from "./routes/feeds.routes";
 import { articleRoutes } from "./routes/articles.routes";
 import { tagRoutes } from "./routes/tags.routes";
-import { opmlRoutes } from "./routes/opml.routes";
+
 import { themeRoutes } from "./routes/theme.routes";
 import { registerCronJobs } from "./lib/cron";
+import { migrate } from "drizzle-orm/bun-sqlite/migrator";
+import { db } from "./db/connection";
 
 const clientDist = resolve(import.meta.dir, "../../client/dist");
 const clientPublic = resolve(import.meta.dir, "../../client/public");
@@ -31,7 +33,7 @@ app.route("/api/folders", folderRoutes);
 app.route("/api/feeds", feedRoutes);
 app.route("/api/articles", articleRoutes);
 app.route("/api/tags", tagRoutes);
-app.route("/api/opml", opmlRoutes);
+
 app.route("/api/theme", themeRoutes);
 
 app.use("/assets/*", serveStatic({ root: clientDist }));
@@ -55,6 +57,9 @@ app.get("*", (c) => {
 });
 
 registerCronJobs();
+
+const migrationsFolder = resolve(import.meta.dir, "db/migrations");
+migrate(db, { migrationsFolder });
 
 export default {
   port: env.port,

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, inArray } from "drizzle-orm";
 import { db, schema } from "../db/connection";
 import { requireAuth } from "../middleware";
 import { subscribeToFeed, refreshFeed } from "../services/feed-service";
@@ -81,6 +81,44 @@ feedRoutes.delete("/:id", async (c) => {
     .returning();
 
   if (result.length === 0) return c.json({ error: "Subscription not found" }, 404);
+
+  const articleIds = (await db
+    .select({ id: schema.articles.id })
+    .from(schema.articles)
+    .where(eq(schema.articles.feedId, feedId))
+    .all()).map((a) => a.id);
+
+  if (articleIds.length > 0) {
+    await db
+      .delete(schema.userArticles)
+      .where(and(
+        eq(schema.userArticles.userId, user.id),
+        inArray(schema.userArticles.articleId, articleIds),
+      ));
+  }
+
+  return c.json({ success: true });
+});
+
+feedRoutes.put("/:id", async (c) => {
+  const user = requireAuth(c)!;
+  const feedId = parseInt(c.req.param("id"), 10);
+  const body = await c.req.json<{ displayName?: string | null; folderId?: number | null }>();
+
+  const sub = await db.query.subscriptions.findFirst({
+    where: and(eq(schema.subscriptions.feedId, feedId), eq(schema.subscriptions.userId, user.id)),
+  });
+  if (!sub) return c.json({ error: "Subscription not found" }, 404);
+
+  const update: Partial<typeof schema.subscriptions.$inferInsert> = {};
+  if (body.displayName !== undefined) update.displayName = body.displayName || null;
+  if (body.folderId !== undefined) update.folderId = body.folderId;
+
+  await db
+    .update(schema.subscriptions)
+    .set(update)
+    .where(eq(schema.subscriptions.id, sub.id));
+
   return c.json({ success: true });
 });
 

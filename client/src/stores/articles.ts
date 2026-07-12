@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import type { ArticleDTO, ArticleListResponse } from "@rift/shared";
 import { useAuthStore } from "./auth";
+import { useFeedsStore } from "./feeds";
 
 export type ArticleFilter =
   | { type: "all" }
@@ -16,6 +17,7 @@ export const useArticlesStore = defineStore("articles", () => {
   const nextCursor = ref<number | null>(null);
   const loading = ref(false);
   const currentFilter = ref<ArticleFilter>({ type: "all" });
+  const hideRead = ref(true);
 
   async function loadArticles(reset = false) {
     const auth = useAuthStore();
@@ -30,6 +32,12 @@ export const useArticlesStore = defineStore("articles", () => {
       params.set("folderId", String(currentFilter.value.folderId));
     } else if (currentFilter.value.type === "saved") {
       params.set("saved", "true");
+    }
+
+    if (hideRead.value) {
+      params.set("hideRead", "true");
+    } else {
+      params.set("hideRead", "false");
     }
 
     if (!reset && nextCursor.value) {
@@ -80,14 +88,30 @@ export const useArticlesStore = defineStore("articles", () => {
 
   async function markRead(articleId: number, read: boolean) {
     const auth = useAuthStore();
+    const article = articles.value.find((a) => a.id === articleId);
+    const wasRead = article?.read ?? false;
+    if (wasRead === read) return;
+
     await fetch(`/api/articles/${articleId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json", ...auth.authHeaders() },
       body: JSON.stringify({ read }),
     });
-    const article = articles.value.find((a) => a.id === articleId);
+
     if (article) {
       article.read = read;
+    }
+    if (currentArticle.value?.id === articleId) {
+      currentArticle.value.read = read;
+    }
+
+    const feedsStore = useFeedsStore();
+    const feedId = article?.feedId ?? currentArticle.value?.feedId;
+    if (feedId !== undefined) {
+      const feed = feedsStore.feeds.find((f) => f.id === feedId);
+      if (feed) {
+        feed.unreadCount = Math.max(0, feed.unreadCount + (read ? -1 : 1));
+      }
     }
   }
 
@@ -115,17 +139,27 @@ export const useArticlesStore = defineStore("articles", () => {
     return loadArticles(true);
   }
 
+  function setHideRead(value: boolean) {
+    hideRead.value = value;
+    articles.value = [];
+    nextCursor.value = null;
+    currentArticle.value = null;
+    return loadArticles(true);
+  }
+
   return {
     articles,
     currentArticle,
     nextCursor,
     loading,
     currentFilter,
+    hideRead,
     loadArticles,
     selectArticle,
     loadArticle,
     markRead,
     toggleSaved,
     setFilter,
+    setHideRead,
   };
 });

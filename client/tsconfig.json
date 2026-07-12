@@ -17,5 +17,5 @@
       "@rift/shared/*": ["../packages/shared/src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.vue"]
+  "include": ["src/**/*.ts", "src/**/*.vue", "src/**/*.d.ts"]
 }

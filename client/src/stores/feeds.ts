@@ -69,6 +69,20 @@ export const useFeedsStore = defineStore("feeds", () => {
     await fetchFeeds();
   }
 
+  async function updateFeed(feedId: number, changes: { displayName?: string | null; folderId?: number | null }) {
+    const auth = useAuthStore();
+    const res = await fetch(`/api/feeds/${feedId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...auth.authHeaders() },
+      body: JSON.stringify(changes),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? "Failed to update feed");
+    }
+    await fetchFeeds();
+  }
+
   async function addFolder(name: string) {
     const auth = useAuthStore();
     const res = await fetch("/api/folders", {
@@ -79,6 +93,30 @@ export const useFeedsStore = defineStore("feeds", () => {
     if (res.ok) {
       await fetchFolders();
     }
+  }
+
+  async function updateFolder(folderId: number, name: string) {
+    const auth = useAuthStore();
+    const res = await fetch(`/api/folders/${folderId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json", ...auth.authHeaders() },
+      body: JSON.stringify({ name }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error ?? "Failed to rename folder");
+    }
+    await fetchFolders();
+  }
+
+  async function removeFolder(folderId: number) {
+    const auth = useAuthStore();
+    await fetch(`/api/folders/${folderId}`, {
+      method: "DELETE",
+      headers: auth.authHeaders(),
+    });
+    await fetchFolders();
+    await fetchFeeds();
   }
 
   async function refreshFeed(feedId: number) {
@@ -99,37 +137,6 @@ export const useFeedsStore = defineStore("feeds", () => {
     await fetchFeeds();
   }
 
-  async function importOpml(file: File) {
-    const auth = useAuthStore();
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/opml/import", {
-      method: "POST",
-      headers: auth.authHeaders(),
-      body: formData,
-    });
-    if (!res.ok) throw new Error("Import failed");
-    const data = await res.json();
-    await fetchFeeds();
-    await fetchFolders();
-    return data.imported as number;
-  }
-
-  async function exportOpml() {
-    const auth = useAuthStore();
-    const res = await fetch("/api/opml/export", {
-      headers: auth.authHeaders(),
-    });
-    if (!res.ok) throw new Error("Export failed");
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "rift-subscriptions.opml";
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   return {
     folders,
     feeds,
@@ -141,10 +148,11 @@ export const useFeedsStore = defineStore("feeds", () => {
     fetchFolders,
     addFeed,
     removeFeed,
+    updateFeed,
     addFolder,
+    updateFolder,
+    removeFolder,
     refreshFeed,
     refreshAll,
-    importOpml,
-    exportOpml,
   };
 });
