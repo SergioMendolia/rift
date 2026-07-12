@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useArticlesStore } from "../../stores/articles";
 
 const props = defineProps<{
@@ -18,6 +18,44 @@ const hasNext = computed(() => {
   const idx = articles.findIndex((a) => a.id === article.value?.id);
   return idx >= 0 && idx < articles.length - 1;
 });
+
+const swipeOffset = ref(0);
+const swipeTriggered = ref(false);
+let startY = 0;
+let isSwiping = false;
+const TRIGGER_THRESHOLD = 80;
+const MAX_PULL = 120;
+
+function onTouchStart(e: TouchEvent) {
+  const el = e.currentTarget as HTMLElement;
+  if (el.scrollTop + el.clientHeight >= el.scrollHeight - 4) {
+    startY = e.touches[0].clientY;
+    isSwiping = true;
+    swipeTriggered.value = false;
+  } else {
+    isSwiping = false;
+  }
+}
+
+function onTouchMove(e: TouchEvent) {
+  if (!isSwiping) return;
+  const delta = startY - e.touches[0].clientY;
+  if (delta > 0) {
+    e.preventDefault();
+    swipeOffset.value = Math.min(delta, MAX_PULL);
+    swipeTriggered.value = swipeOffset.value >= TRIGGER_THRESHOLD;
+  }
+}
+
+function onTouchEnd() {
+  if (!isSwiping) return;
+  isSwiping = false;
+  if (swipeOffset.value >= TRIGGER_THRESHOLD && hasNext.value) {
+    emit("next");
+  }
+  swipeOffset.value = 0;
+  swipeTriggered.value = false;
+}
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleString();
@@ -62,7 +100,27 @@ async function share() {
 </script>
 
 <template>
-  <div class="article-view">
+  <div
+    class="article-view"
+    :class="{ 'swipe-active': swipeOffset > 0 }"
+    @touchstart="onTouchStart"
+    @touchmove.passive="false"
+    @touchmove="onTouchMove"
+    @touchend="onTouchEnd"
+  >
+    <div
+      class="pull-indicator"
+      :class="{ 'pull-triggered': swipeTriggered, 'pull-hidden': swipeOffset === 0 }"
+      :style="{ transform: `translateY(${120 - swipeOffset}px)` }"
+    >
+      <svg v-if="swipeTriggered" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7" />
+      </svg>
+      <svg v-else width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 19V5M5 12l7-7 7 7" />
+      </svg>
+      <span>{{ swipeTriggered ? "Release for next" : "Pull for next" }}</span>
+    </div>
     <div v-if="!article" class="empty-state">
       <div class="icon">
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
