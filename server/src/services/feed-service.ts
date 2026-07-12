@@ -27,7 +27,7 @@ const FEED_MIME_TYPES = new Set([
 
 const COMMON_FEED_PATHS = ["/feed", "/rss", "/rss.xml", "/feed.xml", "/index.xml", "/atom.xml"];
 
-function rewriteKnownSites(url: string): string {
+export function rewriteKnownSites(url: string): string {
   try {
     const u = new URL(url);
     if (u.hostname.endsWith("reddit.com")) {
@@ -135,11 +135,11 @@ export async function subscribeToFeed(
 ): Promise<FeedDTO> {
   const normalizedUrl = url.trim();
 
-  let feedUrl = normalizedUrl;
+  let feedUrl = rewriteKnownSites(normalizedUrl);
   try {
-    feedUrl = await discoverFeedUrl(normalizedUrl);
+    feedUrl = await discoverFeedUrl(feedUrl);
   } catch {
-    // fall through and let parser.parseURL give the real error
+    // fall through; feedUrl is already the rewritten URL, parser.parseURL will give the real error
   }
 
   let feed = await db.query.feeds.findFirst({
