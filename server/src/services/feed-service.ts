@@ -10,6 +10,94 @@ const parser = new Parser({
   },
 });
 
+const FETCH_TIMEOUT = 10000;
+
+const FEED_LINK_RE = /<link\b[^>]*\brel=["']alternate["'][^>]*>/gi;
+const TYPE_RE = /type=["']([^"']+)["']/i;
+const HREF_RE = /href=["']([^"']+)["']/i;
+
+const FEED_MIME_TYPES = new Set([
+  "application/rss+xml",
+  "application/atom+xml",
+  "application/feed+json",
+  "text/xml",
+  "application/xml",
+]);
+
+const COMMON_FEED_PATHS = ["/feed", "/rss", "/rss.xml", "/feed.xml", "/index.xml", "/atom.xml"];
+
+export async function discoverFeedUrl(url: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+
+  try {
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: { "User-Agent": "Rift RSS Reader (https://github.com/rift)" },
+      redirect: "follow",
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+    const text = await response.text();
+
+    if (
+      contentType.includes("xml") ||
+      contentType.includes("rss") ||
+      contentType.includes("atom") ||
+      text.trimStart().startsWith("<?xml")
+    ) {
+      return url;
+    }
+
+    const linkMatches = text.match(FEED_LINK_RE) ?? [];
+    for (const tag of linkMatches) {
+      const typeMatch = tag.match(TYPE_RE);
+      const type = typeMatch ? typeMatch[1].toLowerCase() : "";
+      if (!FEED_MIME_TYPES.has(type)) continue;
+
+      const hrefMatch = tag.match(HREF_RE);
+      if (!hrefMatch) continue;
+
+      try {
+        return new URL(hrefMatch[1], url).toString();
+      } catch {
+        continue;
+      }
+    }
+
+    const baseUrl = new URL(url);
+    for (const path of COMMON_FEED_PATHS) {
+      const candidate = new URL(path, `${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, "")}`).toString();
+      try {
+        const probeController = new AbortController();
+        const probeTimeout = setTimeout(() => probeController.abort(), FETCH_TIMEOUT);
+        const probe = await fetch(candidate, {
+          signal: probeController.signal,
+          headers: { "User-Agent": "Rift RSS Reader" },
+          redirect: "follow",
+        });
+        clearTimeout(probeTimeout);
+        const probeContentType = (probe.headers.get("content-type") ?? "").toLowerCase();
+        if (
+          probe.ok &&
+          (probeContentType.includes("xml") ||
+            probeContentType.includes("rss") ||
+            probeContentType.includes("atom"))
+        ) {
+          return candidate;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    throw new Error("Could not find an RSS feed at this URL");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function subscribeToFeed(
   url: string,
   userId: number,
@@ -17,20 +105,27 @@ export async function subscribeToFeed(
 ): Promise<FeedDTO> {
   const normalizedUrl = url.trim();
 
+  let feedUrl = normalizedUrl;
+  try {
+    feedUrl = await discoverFeedUrl(normalizedUrl);
+  } catch {
+    // fall through and let parser.parseURL give the real error
+  }
+
   let feed = await db.query.feeds.findFirst({
-    where: eq(schema.feeds.url, normalizedUrl),
+    where: eq(schema.feeds.url, feedUrl),
   });
 
   if (!feed) {
-    const parsed = await parser.parseURL(normalizedUrl);
-    const faviconUrl = await tryGetFavicon(parsed.link ?? normalizedUrl);
+    const parsed = await parser.parseURL(feedUrl);
+    const faviconUrl = await tryGetFavicon(parsed.link ?? feedUrl);
 
     const feedResult = await db
       .insert(schema.feeds)
       .values({
-        url: normalizedUrl,
-        title: parsed.title ?? normalizedUrl,
-        feedUrl: normalizedUrl,
+        url: feedUrl,
+        title: parsed.title ?? feedUrl,
+        feedUrl,
         siteUrl: parsed.link ?? null,
         faviconUrl,
         lastFetchedAt: null,
