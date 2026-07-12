@@ -43,12 +43,8 @@ app.use("/manifest.webmanifest", serveStatic({ path: resolve(clientDist, "manife
 app.use("/sw.js", serveStatic({ path: resolve(clientDist, "sw.js") }));
 app.use("/workbox-*.js", serveStatic({ root: clientDist }));
 app.use("/registerSW.js", serveStatic({ root: clientDist }));
-
-app.get("/favicon.ico", (c) => {
-  const file = Bun.file(resolve(clientPublic, "favicon.ico"));
-  if (file.size > 0) return c.body(file);
-  return c.body("Not found", 404);
-});
+app.use("/favicon.svg", serveStatic({ path: resolve(clientPublic, "favicon.svg") }));
+app.use("/favicon.ico", serveStatic({ path: resolve(clientPublic, "favicon.ico") }));
 
 const indexHtml = resolve(clientDist, "index.html");
 

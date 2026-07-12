@@ -68,6 +68,7 @@ function onTouchEnd(articleId: number) {
 
   const article = articles.value.find((a) => a.id === articleId);
   if (swipeOffset.value >= SWIPE_THRESHOLD && article) {
+    if (navigator.vibrate) navigator.vibrate(10);
     articlesStore.markRead(articleId, !article.read);
   }
 

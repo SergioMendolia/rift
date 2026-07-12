@@ -47,10 +47,15 @@ function onTouchMove(e: TouchEvent) {
   }
 }
 
+function vibrate(ms: number = 10) {
+  if (navigator.vibrate) navigator.vibrate(ms);
+}
+
 function onTouchEnd() {
   if (!isSwiping) return;
   isSwiping = false;
   if (swipeOffset.value >= TRIGGER_THRESHOLD && hasNext.value) {
+    vibrate(15);
     emit("next");
   }
   swipeOffset.value = 0;
@@ -69,6 +74,7 @@ function toggleSaved() {
 
 function toggleRead() {
   if (article.value) {
+    vibrate(10);
     articlesStore.markRead(article.value.id, !article.value.read);
   }
 }
