@@ -10,7 +10,7 @@
     "db:migrate": "DB_PATH=../data/rift.db bun src/db/migrate.ts"
   },
   "dependencies": {
-    "drizzle-orm": "^0.41.0",
+    "drizzle-orm": "^0.45.0",
     "hono": "^4.7.0",
     "@hono/zod-validator": "^0.8.0",
     "zod": "^3.24.0",
