@@ -12,6 +12,12 @@
     "start": "bun run server/src/index.ts",
     "db:generate": "bun --filter rift-server db:generate",
     "db:migrate": "bun --filter rift-server db:migrate",
-    "test": "bun test"
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@vue/test-utils": "^2.4.11",
+    "happy-dom": "^20.10.6",
+    "vitest": "^4.1.10"
   }
 }

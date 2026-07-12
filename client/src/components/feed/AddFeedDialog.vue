@@ -45,12 +45,12 @@ function close() {
       <h2>Add Feed</h2>
       <div v-if="error" class="error" style="color: #d44; margin-bottom: var(--spacing-sm);">{{ error }}</div>
       <div class="form-group">
-        <label for="feed-url">Feed URL</label>
+        <label for="feed-url">Feed or Site URL</label>
         <input
           id="feed-url"
           type="url"
           v-model="url"
-          placeholder="https://example.com/feed.xml"
+          placeholder="https://example.com or https://example.com/feed.xml"
           @keyup.enter="submit"
           :disabled="loading"
         />
