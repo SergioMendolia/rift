@@ -1,0 +1,38 @@
+# Example production docker-compose for Rift
+# Copy to docker-compose.prod.yml and edit the values below.
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d
+#
+# Before first run, generate a strong JWT secret:
+#   openssl rand -base64 32
+
+services:
+  rift:
+    # Use the prebuilt image from GHCR instead of building locally
+    image: ghcr.io/sergiomendolia/rift:latest
+    # Or build from source:
+    # build: .
+
+    restart: unless-stopped
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - ./data:/app/data
+      # Optional: mount a custom theme
+      # - ./themes/custom.css:/app/data/themes/custom.css:ro
+
+    environment:
+      # REQUIRED: change this to a strong random string
+      - JWT_SECRET=CHANGE_ME_TO_A_RANDOM_STRING
+
+      # Feed polling schedule (default: every 30 minutes)
+      - POLL_CRON=*/30 * * * *
+
+      # SQLite database path (default: /app/data/rift.db)
+      - DB_PATH=/app/data/rift.db
+
+      # Server port (default: 3000)
+      - PORT=3000

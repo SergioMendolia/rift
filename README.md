@@ -15,13 +15,69 @@ A clean, efficient, self-hostable RSS reader.
 
 ## Quick Start
 
-### Docker
+### Docker (development)
 
 ```bash
 docker compose up -d
 ```
 
 Visit `http://localhost:3000` and create your admin account on first run.
+
+### Docker (production)
+
+Copy the example production compose file and edit it:
+
+```bash
+cp docker-compose.prod.yml docker-compose.override.yml
+```
+
+Set a strong `JWT_SECRET`:
+
+```bash
+# Generate a random secret
+openssl rand -base64 32
+```
+
+Edit `docker-compose.override.yml` and replace `JWT_SECRET=CHANGE_ME_TO_A_RANDOM_STRING` with the generated value.
+
+Start the server:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
+```
+
+Or use the production file directly:
+
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Visit `http://your-server:3000` and create your admin account on first run.
+
+### Reverse Proxy (Pangolin, Traefik, Caddy, etc.)
+
+When running behind a reverse proxy, make sure to forward these headers:
+- `X-Forwarded-Proto` (e.g. `https`)
+- `X-Forwarded-Host` (e.g. `rift.example.com`)
+
+Example Caddy config:
+
+```
+rift.example.com {
+    reverse_proxy localhost:3000
+}
+```
+
+Example Traefik labels (add to the rift service in your compose file):
+
+```yaml
+labels:
+  - "traefik.enable=true"
+  - "traefik.http.routers.rift.rule=Host(`rift.example.com`)"
+  - "traefik.http.routers.rift.entrypoints=websecure"
+  - "traefik.http.routers.rift.tls=true"
+  - "traefik.http.services.rift.loadbalancer.server.port=3000"
+```
 
 ### Development
 
