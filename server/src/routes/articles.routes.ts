@@ -19,7 +19,6 @@ articleRoutes.get("/", async (c) => {
   const read = c.req.query("read");
   const saved = c.req.query("saved");
   const hideRead = c.req.query("hideRead") !== "false";
-  const tagId = c.req.query("tagId");
   const cursor = c.req.query("cursor");
   const limit = Math.min(parseInt(c.req.query("limit") ?? "50", 10), 100);
 
@@ -92,7 +91,6 @@ articleRoutes.get("/", async (c) => {
     publishedAt: r.article.publishedAt,
     read: r.userArticle.read,
     saved: r.userArticle.saved,
-    tags: [],
   }));
 
   const response: ArticleListResponse = { articles: dtos, nextCursor };
@@ -130,7 +128,6 @@ articleRoutes.get("/:id", async (c) => {
     publishedAt: result.article.publishedAt,
     read: result.userArticle.read,
     saved: result.userArticle.saved,
-    tags: [],
   } satisfies ArticleDTO);
 });
 

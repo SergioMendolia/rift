@@ -8,7 +8,6 @@ A clean, efficient, self-hostable RSS reader.
 - Feed subscription
 - Folders for organizing feeds
 - Read/unread state, save for later
-- Tags
 - Dark mode / theming (CSS-only, custom themes supported)
 - PWA (installable, works in-browser)
 - Cron-based feed polling

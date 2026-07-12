@@ -8,8 +8,7 @@ export type ArticleFilter =
   | { type: "all" }
   | { type: "saved" }
   | { type: "feed"; feedId: number }
-  | { type: "folder"; folderId: number }
-  | { type: "tag"; tagId: number };
+  | { type: "folder"; folderId: number };
 
 export const useArticlesStore = defineStore("articles", () => {
   const articles = ref<ArticleDTO[]>([]);

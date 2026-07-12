@@ -81,21 +81,3 @@ export const userArticles = sqliteTable("user_articles", {
   readAt: text("read_at"),
   savedAt: text("saved_at"),
 });
-
-export const tags = sqliteTable("tags", {
-  id: integer().primaryKey({ autoIncrement: true }),
-  userId: integer("user_id")
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-  name: text().notNull(),
-  color: text(),
-});
-
-export const articleTags = sqliteTable("article_tags", {
-  tagId: integer("tag_id")
-    .notNull()
-    .references(() => tags.id, { onDelete: "cascade" }),
-  userArticleId: integer("user_article_id")
-    .notNull()
-    .references(() => userArticles.id, { onDelete: "cascade" }),
-});

@@ -45,13 +45,6 @@ export interface ArticleDTO {
   publishedAt: string;
   read: boolean;
   saved: boolean;
-  tags: TagDTO[];
-}
-
-export interface TagDTO {
-  id: number;
-  name: string;
-  color: string | null;
 }
 
 export interface ArticleListResponse {

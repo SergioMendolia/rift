@@ -10,7 +10,7 @@ import { settingsRoutes } from "./routes/settings.routes";
 import { folderRoutes } from "./routes/folders.routes";
 import { feedRoutes } from "./routes/feeds.routes";
 import { articleRoutes } from "./routes/articles.routes";
-import { tagRoutes } from "./routes/tags.routes";
+
 
 import { themeRoutes } from "./routes/theme.routes";
 import { registerCronJobs } from "./lib/cron";
@@ -32,7 +32,7 @@ app.route("/api/settings", settingsRoutes);
 app.route("/api/folders", folderRoutes);
 app.route("/api/feeds", feedRoutes);
 app.route("/api/articles", articleRoutes);
-app.route("/api/tags", tagRoutes);
+
 
 app.route("/api/theme", themeRoutes);
 
