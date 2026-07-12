@@ -27,6 +27,32 @@ const FEED_MIME_TYPES = new Set([
 
 const COMMON_FEED_PATHS = ["/feed", "/rss", "/rss.xml", "/feed.xml", "/index.xml", "/atom.xml"];
 
+const MAX_RETRIES = 3;
+const RETRY_BASE_MS = 2000;
+
+async function fetchWithRetry(input: string, init?: RequestInit): Promise<Response> {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+    try {
+      const response = await fetch(input, {
+        ...init,
+        signal: controller.signal,
+      });
+      if (response.status !== 429) return response;
+      if (attempt === MAX_RETRIES) return response;
+      const retryAfter = response.headers.get("retry-after");
+      const delay = retryAfter
+        ? parseFloat(retryAfter) * 1000
+        : RETRY_BASE_MS * 2 ** attempt;
+      await new Promise((r) => setTimeout(r, delay));
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+  throw new Error("retry loop exited unexpectedly");
+}
+
 export function rewriteKnownSites(url: string): string {
   try {
     const u = new URL(url);
@@ -57,75 +83,63 @@ export function rewriteKnownSites(url: string): string {
 export async function discoverFeedUrl(url: string): Promise<string> {
   const rewritten = rewriteKnownSites(url);
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
+  const response = await fetchWithRetry(rewritten, {
+    headers: { "User-Agent": env.userAgent },
+    redirect: "follow",
+  });
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-  try {
-    const response = await fetch(rewritten, {
-      signal: controller.signal,
-      headers: { "User-Agent": env.userAgent },
-      redirect: "follow",
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+  const text = await response.text();
 
-    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
-    const text = await response.text();
-
-    if (
-      contentType.includes("xml") ||
-      contentType.includes("rss") ||
-      contentType.includes("atom") ||
-      text.trimStart().startsWith("<?xml")
-    ) {
-      return rewritten;
-    }
-
-    const linkMatches = text.match(FEED_LINK_RE) ?? [];
-    for (const tag of linkMatches) {
-      const typeMatch = tag.match(TYPE_RE);
-      const type = typeMatch ? typeMatch[1].toLowerCase() : "";
-      if (!FEED_MIME_TYPES.has(type)) continue;
-
-      const hrefMatch = tag.match(HREF_RE);
-      if (!hrefMatch) continue;
-
-      try {
-        return new URL(hrefMatch[1], url).toString();
-      } catch {
-        continue;
-      }
-    }
-
-    const baseUrl = new URL(url);
-    for (const path of COMMON_FEED_PATHS) {
-      const candidate = new URL(path, `${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, "")}`).toString();
-      try {
-        const probeController = new AbortController();
-        const probeTimeout = setTimeout(() => probeController.abort(), FETCH_TIMEOUT);
-        const probe = await fetch(candidate, {
-          signal: probeController.signal,
-          headers: { "User-Agent": env.userAgent },
-          redirect: "follow",
-        });
-        clearTimeout(probeTimeout);
-        const probeContentType = (probe.headers.get("content-type") ?? "").toLowerCase();
-        if (
-          probe.ok &&
-          (probeContentType.includes("xml") ||
-            probeContentType.includes("rss") ||
-            probeContentType.includes("atom"))
-        ) {
-          return candidate;
-        }
-      } catch {
-        continue;
-      }
-    }
-
-    throw new Error("Could not find an RSS feed at this URL");
-  } finally {
-    clearTimeout(timeout);
+  if (
+    contentType.includes("xml") ||
+    contentType.includes("rss") ||
+    contentType.includes("atom") ||
+    text.trimStart().startsWith("<?xml")
+  ) {
+    return rewritten;
   }
+
+  const linkMatches = text.match(FEED_LINK_RE) ?? [];
+  for (const tag of linkMatches) {
+    const typeMatch = tag.match(TYPE_RE);
+    const type = typeMatch ? typeMatch[1].toLowerCase() : "";
+    if (!FEED_MIME_TYPES.has(type)) continue;
+
+    const hrefMatch = tag.match(HREF_RE);
+    if (!hrefMatch) continue;
+
+    try {
+      return new URL(hrefMatch[1], url).toString();
+    } catch {
+      continue;
+    }
+  }
+
+  const baseUrl = new URL(url);
+  for (const path of COMMON_FEED_PATHS) {
+    const candidate = new URL(path, `${baseUrl.origin}${baseUrl.pathname.replace(/\/$/, "")}`).toString();
+    try {
+      const probe = await fetchWithRetry(candidate, {
+        headers: { "User-Agent": env.userAgent },
+        redirect: "follow",
+      });
+      const probeContentType = (probe.headers.get("content-type") ?? "").toLowerCase();
+      if (
+        probe.ok &&
+        (probeContentType.includes("xml") ||
+          probeContentType.includes("rss") ||
+          probeContentType.includes("atom"))
+      ) {
+        return candidate;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("Could not find an RSS feed at this URL");
 }
 
 export async function subscribeToFeed(
@@ -136,10 +150,13 @@ export async function subscribeToFeed(
   const normalizedUrl = url.trim();
 
   let feedUrl = rewriteKnownSites(normalizedUrl);
-  try {
-    feedUrl = await discoverFeedUrl(feedUrl);
-  } catch {
-    // fall through; feedUrl is already the rewritten URL, parser.parseURL will give the real error
+  const rewrittenByKnownSite = feedUrl !== normalizedUrl;
+  if (!rewrittenByKnownSite) {
+    try {
+      feedUrl = await discoverFeedUrl(feedUrl);
+    } catch {
+      // fall through; feedUrl is the original URL, parser.parseURL will give the real error
+    }
   }
 
   let feed = await db.query.feeds.findFirst({
@@ -229,7 +246,7 @@ export async function refreshFeed(feedId: number): Promise<void> {
       },
     };
 
-    const response = await fetch(feed.feedUrl, fetchOptions);
+    const response = await fetchWithRetry(feed.feedUrl, fetchOptions);
 
     if (response.status === 304) {
       await db
