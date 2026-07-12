@@ -1,12 +1,13 @@
 import Parser from "rss-parser";
 import { eq, and } from "drizzle-orm";
 import { db, schema } from "../db/connection";
+import { env } from "../env";
 import type { FeedDTO } from "@rift/shared";
 
 const parser = new Parser({
   timeout: 10000,
   headers: {
-    "User-Agent": "Rift RSS Reader (https://github.com/rift)",
+    "User-Agent": env.userAgent,
   },
 });
 
@@ -26,14 +27,43 @@ const FEED_MIME_TYPES = new Set([
 
 const COMMON_FEED_PATHS = ["/feed", "/rss", "/rss.xml", "/feed.xml", "/index.xml", "/atom.xml"];
 
+function rewriteKnownSites(url: string): string {
+  try {
+    const u = new URL(url);
+    if (u.hostname.endsWith("reddit.com")) {
+      let path = u.pathname;
+      if (path.endsWith(".rss")) {
+        return `${u.origin}${path}${u.search}`;
+      }
+      const segments = path.split("/").filter(Boolean);
+      const last = segments[segments.length - 1];
+      if (last === "search") {
+        return `${u.origin}${path}.rss${u.search}`;
+      }
+      if (path === "/" || path === "") {
+        return `${u.origin}/.rss${u.search}`;
+      }
+      if (path.endsWith("/")) {
+        return `${u.origin}${path}.rss${u.search}`;
+      }
+      return `${u.origin}${path}/.rss${u.search}`;
+    }
+    return url;
+  } catch {
+    return url;
+  }
+}
+
 export async function discoverFeedUrl(url: string): Promise<string> {
+  const rewritten = rewriteKnownSites(url);
+
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
   try {
-    const response = await fetch(url, {
+    const response = await fetch(rewritten, {
       signal: controller.signal,
-      headers: { "User-Agent": "Rift RSS Reader (https://github.com/rift)" },
+      headers: { "User-Agent": env.userAgent },
       redirect: "follow",
     });
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -47,7 +77,7 @@ export async function discoverFeedUrl(url: string): Promise<string> {
       contentType.includes("atom") ||
       text.trimStart().startsWith("<?xml")
     ) {
-      return url;
+      return rewritten;
     }
 
     const linkMatches = text.match(FEED_LINK_RE) ?? [];
@@ -74,7 +104,7 @@ export async function discoverFeedUrl(url: string): Promise<string> {
         const probeTimeout = setTimeout(() => probeController.abort(), FETCH_TIMEOUT);
         const probe = await fetch(candidate, {
           signal: probeController.signal,
-          headers: { "User-Agent": "Rift RSS Reader" },
+          headers: { "User-Agent": env.userAgent },
           redirect: "follow",
         });
         clearTimeout(probeTimeout);
@@ -193,7 +223,7 @@ export async function refreshFeed(feedId: number): Promise<void> {
   try {
     const fetchOptions: RequestInit = {
       headers: {
-        "User-Agent": "Rift RSS Reader",
+        "User-Agent": env.userAgent,
         ...(feed.etag ? { "If-None-Match": feed.etag } : {}),
         ...(feed.lastModified ? { "If-Modified-Since": feed.lastModified } : {}),
       },

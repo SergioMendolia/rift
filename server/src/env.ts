@@ -16,6 +16,7 @@ export const env = {
   dbPath: optional("DB_PATH", "./data/rift.db")!,
   pollCron: optional("POLL_CRON", "*/30 * * * *")!,
   dataDir: optional("DATA_DIR", "./data")!,
+  userAgent: optional("USER_AGENT", "Rift/1.0 ( https://github.com/SergioMendolia/rift; by Someone)"),
   oidcIssuer: optional("OIDC_ISSUER"),
   oidcClientId: optional("OIDC_CLIENT_ID"),
   oidcClientSecret: optional("OIDC_CLIENT_SECRET"),
