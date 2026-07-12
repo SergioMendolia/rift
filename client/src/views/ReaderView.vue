@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, ref, computed, watch } from "vue";
 import { useFeedsStore } from "../stores/feeds";
 import { useArticlesStore, type ArticleFilter } from "../stores/articles";
 import { useSettingsStore } from "../stores/settings";
@@ -13,20 +12,20 @@ const feedsStore = useFeedsStore();
 const articlesStore = useArticlesStore();
 const settingsStore = useSettingsStore();
 const auth = useAuthStore();
-const router = useRouter();
 
 const collapsedFolders = ref<Set<number>>(new Set());
 
 const currentArticle = computed(() => articlesStore.currentArticle);
 
-onMounted(async () => {
-  await feedsStore.fetchFeeds();
-  await feedsStore.fetchFolders();
-  await articlesStore.loadArticles(true);
-});
+const mobilePane = ref<"sidebar" | "list" | "article">("list");
+
+function isMobile() {
+  return window.innerWidth <= 768;
+}
 
 function selectFilter(filter: ArticleFilter) {
   articlesStore.setFilter(filter);
+  if (isMobile()) mobilePane.value = "list";
 }
 
 function toggleFolder(id: number) {
@@ -39,7 +38,34 @@ function toggleFolder(id: number) {
 
 function selectArticle(articleId: number) {
   articlesStore.loadArticle(articleId);
+  if (isMobile()) mobilePane.value = "article";
 }
+
+function showSidebar() {
+  mobilePane.value = "sidebar";
+}
+
+function backToList() {
+  mobilePane.value = "list";
+}
+
+function nextArticle() {
+  const articles = articlesStore.articles;
+  const currentIdx = articles.findIndex((a) => a.id === currentArticle.value?.id);
+  if (currentIdx >= 0 && currentIdx < articles.length - 1) {
+    selectArticle(articles[currentIdx + 1].id);
+  }
+}
+
+watch(() => articlesStore.currentArticle, (article) => {
+  if (isMobile() && article) mobilePane.value = "article";
+});
+
+onMounted(async () => {
+  await feedsStore.fetchFeeds();
+  await feedsStore.fetchFolders();
+  await articlesStore.loadArticles(true);
+});
 
 function handleKeydown(e: KeyboardEvent) {
   if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
@@ -82,10 +108,21 @@ function handleKeydown(e: KeyboardEvent) {
   <div class="app-layout" tabindex="0" @keydown="handleKeydown">
     <Sidebar
       :collapsed-folders="collapsedFolders"
+      :class="{ 'mobile-hidden': isMobile() && mobilePane !== 'sidebar' }"
       @toggle-folder="toggleFolder"
       @select-filter="selectFilter"
     />
-    <ArticleListPanel @select-article="selectArticle" />
-    <ArticleViewPanel />
+    <ArticleListPanel
+      :class="{ 'mobile-hidden': isMobile() && mobilePane !== 'list' }"
+      :show-back="isMobile() && mobilePane === 'list'"
+      @select-article="selectArticle"
+      @show-sidebar="showSidebar"
+    />
+    <ArticleViewPanel
+      :class="{ 'mobile-hidden': isMobile() && mobilePane !== 'article' }"
+      :show-back="isMobile() && mobilePane === 'article'"
+      @back="backToList"
+      @next="nextArticle"
+    />
   </div>
 </template>

@@ -632,21 +632,85 @@
 }
 
 @media (max-width: 768px) {
-  .sidebar {
-    display: none;
+  :root {
+    --sidebar-width: 100%;
+    --list-width: 100%;
   }
-  .article-list {
+
+  .app-layout {
+    flex-direction: row;
+  }
+
+  .sidebar,
+  .article-list,
+  .article-view {
     width: 100%;
     flex: 1;
+    flex-shrink: 0;
   }
+
+  .mobile-hidden {
+    display: none !important;
+  }
+
+  .mobile-back-btn {
+    flex-shrink: 0;
+  }
+
+  .article-list-header h2 {
+    flex: 1;
+  }
+
   .article-view {
-    display: none;
-  }
-  .article-view.mobile-visible {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 100;
     padding: var(--spacing-md);
+  }
+
+  .article-view .article-content {
+    font-size: var(--font-size-base);
+    padding-bottom: 60px;
+  }
+
+  .mobile-next-btn {
+    position: fixed;
+    bottom: var(--spacing-md);
+    right: var(--spacing-md);
+    z-index: 200;
+    box-shadow: 0 2px 8px var(--shadow);
+  }
+
+  .article-list-header {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .article-card {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .sidebar-header h1 {
+    font-size: var(--font-size-lg);
+  }
+
+  .modal {
+    margin: var(--spacing-md);
+    max-width: calc(100% - 2 * var(--spacing-md));
+  }
+
+  .settings-view {
+    overflow-y: auto;
+  }
+
+  .settings-view,
+  .settings-header,
+  .settings-content {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .settings-content {
+    padding: var(--spacing-md);
+  }
+
+  .theme-options {
+    flex-wrap: wrap;
   }
 }

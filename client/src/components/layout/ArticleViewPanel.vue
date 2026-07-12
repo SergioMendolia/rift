@@ -2,8 +2,22 @@
 import { computed } from "vue";
 import { useArticlesStore } from "../../stores/articles";
 
+const props = defineProps<{
+  showBack?: boolean;
+}>();
+
+const emit = defineEmits<{
+  back: [];
+  next: [];
+}>();
+
 const articlesStore = useArticlesStore();
 const article = computed(() => articlesStore.currentArticle);
+const hasNext = computed(() => {
+  const articles = articlesStore.articles;
+  const idx = articles.findIndex((a) => a.id === article.value?.id);
+  return idx >= 0 && idx < articles.length - 1;
+});
 
 function formatTime(dateStr: string): string {
   return new Date(dateStr).toLocaleString();
@@ -50,6 +64,16 @@ function openOriginal() {
       </div>
       <div class="article-actions">
         <button
+          v-if="props.showBack"
+          class="btn mobile-back-btn"
+          @click="emit('back')"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+          List
+        </button>
+        <button
           class="btn"
           :class="{ 'btn-primary': article.saved }"
           @click="toggleSaved"
@@ -61,6 +85,17 @@ function openOriginal() {
         </button>
         <button class="btn" @click="openOriginal" title="Open original">
           Open Original
+        </button>
+        <button
+          v-if="props.showBack && hasNext"
+          class="btn btn-primary mobile-next-btn"
+          @click="emit('next')"
+          title="Next article"
+        >
+          Next
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7" />
+          </svg>
         </button>
       </div>
       <div class="article-content" v-html="article.content ?? article.summary"></div>

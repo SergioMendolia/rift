@@ -3,8 +3,13 @@ import { computed } from "vue";
 import { useArticlesStore } from "../../stores/articles";
 import { useFeedsStore } from "../../stores/feeds";
 
+const props = defineProps<{
+  showBack?: boolean;
+}>();
+
 const emit = defineEmits<{
   selectArticle: [id: number];
+  showSidebar: [];
 }>();
 
 const articlesStore = useArticlesStore();
@@ -47,6 +52,16 @@ function loadMore() {
 <template>
   <div class="article-list">
     <div class="article-list-header">
+      <button
+        v-if="props.showBack"
+        class="btn btn-ghost btn-icon mobile-back-btn"
+        title="Feeds"
+        @click="emit('showSidebar')"
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 12h18M3 6h18M3 18h18" />
+        </svg>
+      </button>
       <h2>{{ headerTitle }}</h2>
       <div style="display: flex; gap: 2px; align-items: center;">
         <button
