@@ -29,15 +29,34 @@ function toggleSaved() {
   }
 }
 
-function markUnread() {
+function toggleRead() {
   if (article.value) {
-    articlesStore.markRead(article.value.id, false);
+    articlesStore.markRead(article.value.id, !article.value.read);
   }
 }
 
 function openOriginal() {
   if (article.value?.link) {
     window.open(article.value.link, "_blank");
+  }
+}
+
+async function share() {
+  if (!article.value) return;
+  const shareData = {
+    title: article.value.title,
+    text: article.value.summary ?? article.value.title,
+    url: article.value.link,
+  };
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+    } catch {}
+  } else {
+    try {
+      await navigator.clipboard.writeText(article.value.link);
+      alert("Link copied to clipboard");
+    } catch {}
   }
 }
 </script>
@@ -74,17 +93,41 @@ function openOriginal() {
           List
         </button>
         <button
-          class="btn"
+          class="btn btn-icon"
           :class="{ 'btn-primary': article.saved }"
           @click="toggleSaved"
+          :title="article.saved ? 'Remove from saved' : 'Save for later'"
         >
-          {{ article.saved ? "Saved" : "Save" }}
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          </svg>
         </button>
-        <button class="btn" @click="markUnread" title="Mark as unread">
-          Mark Unread
+        <button
+          class="btn btn-icon"
+          :class="{ 'btn-primary': !article.read }"
+          @click="toggleRead"
+          :title="article.read ? 'Mark as unread' : 'Mark as read'"
+        >
+          <svg v-if="article.read" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+          </svg>
+          <svg v-else width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v6l4 2" />
+          </svg>
         </button>
-        <button class="btn" @click="openOriginal" title="Open original">
-          Open Original
+        <button
+          v-if="props.showBack"
+          class="btn"
+          @click="share"
+          title="Share"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="18" cy="5" r="3" />
+            <circle cx="6" cy="12" r="3" />
+            <circle cx="18" cy="19" r="3" />
+            <path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98" />
+          </svg>
         </button>
         <button
           v-if="props.showBack && hasNext"
@@ -99,6 +142,15 @@ function openOriginal() {
         </button>
       </div>
       <div class="article-content" v-html="article.content ?? article.summary"></div>
+      <div class="article-footer">
+        <button class="btn" @click="openOriginal" title="Open original article">
+          Read Original
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+            <path d="M15 3h6v6M10 14L21 3" />
+          </svg>
+        </button>
+      </div>
     </template>
   </div>
 </template>
