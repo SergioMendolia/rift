@@ -16,6 +16,7 @@ export const userSettings = sqliteTable("user_settings", {
     .references(() => users.id, { onDelete: "cascade" }),
   theme: text().notNull().default("light"),
   markReadOnOpen: integer("mark_read_on_open", { mode: "boolean" }).notNull().default(true),
+  dateFormat: text("date_format").notNull().default("relative"),
 });
 
 export const folders = sqliteTable("folders", {

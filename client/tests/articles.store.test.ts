@@ -52,15 +52,17 @@ describe("useArticlesStore", () => {
     expect(url).toContain("feedId=5");
   });
 
-  it("loadArticles with saved filter sets saved param", async () => {
+  it("loadArticles with saved filter sets saved param and forces hideRead=false", async () => {
     fetchMock.mockResolvedValueOnce(jsonResponse({ articles: [], nextCursor: null }));
     const auth = await setupAuth();
     const { useArticlesStore } = await import("../src/stores/articles");
     const store = useArticlesStore();
     store.currentFilter = { type: "saved" };
+    store.hideRead = true;
     await store.loadArticles(true);
     const url = fetchMock.mock.calls[0][0] as string;
     expect(url).toContain("saved=true");
+    expect(url).toContain("hideRead=false");
   });
 
   it("loadArticles appends when not reset", async () => {

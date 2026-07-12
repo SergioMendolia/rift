@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import type { Theme, UserSettingsDTO } from "@rift/shared";
+import type { Theme, DateFormat, UserSettingsDTO } from "@rift/shared";
 import { useAuthStore } from "./auth";
 
 const THEME_KEY = "rift-theme";
@@ -8,6 +8,7 @@ const THEME_KEY = "rift-theme";
 export const useSettingsStore = defineStore("settings", () => {
   const theme = ref<Theme>("light");
   const markReadOnOpen = ref(true);
+  const dateFormat = ref<DateFormat>("relative");
   const loaded = ref(false);
 
   async function load() {
@@ -17,6 +18,7 @@ export const useSettingsStore = defineStore("settings", () => {
       const data: UserSettingsDTO = await res.json();
       theme.value = data.theme;
       markReadOnOpen.value = data.markReadOnOpen;
+      dateFormat.value = data.dateFormat;
       applyTheme(data.theme);
     }
     loaded.value = true;
@@ -36,6 +38,9 @@ export const useSettingsStore = defineStore("settings", () => {
       }
       if (changes.markReadOnOpen !== undefined) {
         markReadOnOpen.value = changes.markReadOnOpen;
+      }
+      if (changes.dateFormat !== undefined) {
+        dateFormat.value = changes.dateFormat;
       }
     }
   }
@@ -59,6 +64,7 @@ export const useSettingsStore = defineStore("settings", () => {
   return {
     theme,
     markReadOnOpen,
+    dateFormat,
     loaded,
     load,
     update,

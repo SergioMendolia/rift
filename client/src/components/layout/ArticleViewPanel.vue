@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { useArticlesStore } from "../../stores/articles";
+import { sanitizeHtml } from "../../composables/useSanitize";
+import { useFormatDate } from "../../composables/useFormatDate";
 
 const props = defineProps<{
   showBack?: boolean;
@@ -12,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const articlesStore = useArticlesStore();
+const { formatDate } = useFormatDate();
 const article = computed(() => articlesStore.currentArticle);
 const hasNext = computed(() => {
   const articles = articlesStore.articles;
@@ -62,9 +65,9 @@ function onTouchEnd() {
   swipeTriggered.value = false;
 }
 
-function formatTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString();
-}
+const sanitizedContent = computed(() =>
+  sanitizeHtml(article.value?.content ?? article.value?.summary ?? ""),
+);
 
 function toggleSaved() {
   if (article.value) {
@@ -142,7 +145,7 @@ async function share() {
         <h1 class="article-title">{{ article.title }}</h1>
         <div class="article-meta">
           <span v-if="article.author">{{ article.author }}</span>
-          <span>{{ formatTime(article.publishedAt) }}</span>
+          <span>{{ formatDate(article.publishedAt) }}</span>
         </div>
       </div>
       <div class="article-actions">
@@ -205,7 +208,7 @@ async function share() {
           </svg>
         </button>
       </div>
-      <div class="article-content" v-html="article.content ?? article.summary"></div>
+      <div class="article-content" v-html="sanitizedContent"></div>
       <div class="article-footer">
         <button class="btn" @click="openOriginal" title="Open original article">
           Read Original

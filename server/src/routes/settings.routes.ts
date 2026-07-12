@@ -21,17 +21,19 @@ settingsRoutes.get("/", async (c) => {
   if (!settings) {
     const result = await db
       .insert(schema.userSettings)
-      .values({ userId: user.id, theme: "light", markReadOnOpen: true })
+      .values({ userId: user.id, theme: "light", markReadOnOpen: true, dateFormat: "relative" })
       .returning();
     return c.json({
       theme: result[0]!.theme,
       markReadOnOpen: result[0]!.markReadOnOpen,
+      dateFormat: result[0]!.dateFormat,
     });
   }
 
   return c.json({
     theme: settings.theme,
     markReadOnOpen: settings.markReadOnOpen,
+    dateFormat: settings.dateFormat,
   });
 });
 
@@ -42,6 +44,7 @@ settingsRoutes.put("/", async (c) => {
   const update: Partial<typeof schema.userSettings.$inferInsert> = {};
   if (body.theme !== undefined) update.theme = body.theme;
   if (body.markReadOnOpen !== undefined) update.markReadOnOpen = body.markReadOnOpen;
+  if (body.dateFormat !== undefined) update.dateFormat = body.dateFormat;
 
   const existing = await db.query.userSettings.findFirst({
     where: eq(schema.userSettings.userId, user.id),
@@ -57,6 +60,7 @@ settingsRoutes.put("/", async (c) => {
       userId: user.id,
       theme: update.theme ?? "light",
       markReadOnOpen: update.markReadOnOpen ?? true,
+      dateFormat: update.dateFormat ?? "relative",
     });
   }
 

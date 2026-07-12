@@ -25,13 +25,14 @@ async function setupAuth() {
 
 describe("useSettingsStore", () => {
   it("load fetches and applies theme", async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse({ theme: "dark", markReadOnOpen: false }));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ theme: "dark", markReadOnOpen: false, dateFormat: "long" }));
     const auth = await setupAuth();
     const { useSettingsStore } = await import("../src/stores/settings");
     const settings = useSettingsStore();
     await settings.load();
     expect(settings.theme).toBe("dark");
     expect(settings.markReadOnOpen).toBe(false);
+    expect(settings.dateFormat).toBe("long");
     expect(settings.loaded).toBe(true);
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(localStorage.getItem("rift-theme")).toBe("dark");
@@ -54,6 +55,15 @@ describe("useSettingsStore", () => {
     const settings = useSettingsStore();
     await settings.update({ markReadOnOpen: false });
     expect(settings.markReadOnOpen).toBe(false);
+  });
+
+  it("update sets dateFormat", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ success: true }));
+    const auth = await setupAuth();
+    const { useSettingsStore } = await import("../src/stores/settings");
+    const settings = useSettingsStore();
+    await settings.update({ dateFormat: "long" });
+    expect(settings.dateFormat).toBe("long");
   });
 
   it("applyTheme custom adds a stylesheet link", async () => {

@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useArticlesStore } from "../../stores/articles";
 import { useFeedsStore } from "../../stores/feeds";
+import { useFormatDate } from "../../composables/useFormatDate";
 
 const props = defineProps<{
   showBack?: boolean;
@@ -14,6 +15,7 @@ const emit = defineEmits<{
 
 const articlesStore = useArticlesStore();
 const feedsStore = useFeedsStore();
+const { formatDate } = useFormatDate();
 
 const articles = computed(() => articlesStore.articles);
 
@@ -91,18 +93,6 @@ const headerTitle = computed(() => {
   }
   return "Articles";
 });
-
-function formatTime(dateStr: string): string {
-  const d = new Date(dateStr);
-  const now = new Date();
-  const diffMs = now.getTime() - d.getTime();
-  const diffH = diffMs / 3600000;
-  if (diffH < 1) return "just now";
-  if (diffH < 24) return `${Math.floor(diffH)}h ago`;
-  const diffDays = diffH / 24;
-  if (diffDays < 7) return `${Math.floor(diffDays)}d ago`;
-  return d.toLocaleDateString();
-}
 
 function loadMore() {
   articlesStore.loadArticles(false);
@@ -184,7 +174,7 @@ async function refreshAll() {
           <div class="title">{{ article.title }}</div>
           <div v-if="article.summary" class="summary">{{ article.summary }}</div>
           <div class="meta">
-            <span>{{ formatTime(article.publishedAt) }}</span>
+            <span>{{ formatDate(article.publishedAt) }}</span>
             <span v-if="article.saved" class="saved-indicator">Saved</span>
           </div>
         </div>

@@ -3,7 +3,8 @@ import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useSettingsStore } from "../stores/settings";
 import { useAuthStore } from "../stores/auth";
-import type { UserDTO, Theme } from "@rift/shared";
+import type { UserDTO, Theme, DateFormat } from "@rift/shared";
+import { DATE_FORMATS, DATE_FORMAT_LABELS } from "@rift/shared";
 import { useApi } from "../composables/useApi";
 
 const settingsStore = useSettingsStore();
@@ -35,6 +36,10 @@ async function setTheme(theme: Theme) {
   await settingsStore.update({ theme });
 }
 
+async function setDateFormat(format: DateFormat) {
+  await settingsStore.update({ dateFormat: format });
+}
+
 async function toggleMarkReadOnOpen() {
   await settingsStore.update({ markReadOnOpen: !settingsStore.markReadOnOpen });
 }
@@ -64,6 +69,7 @@ function back() {
 }
 
 const themes: Theme[] = ["light", "dark", "sepia", "custom"];
+const dateFormats = DATE_FORMATS;
 </script>
 
 <template>
@@ -96,6 +102,21 @@ const themes: Theme[] = ["light", "dark", "sepia", "custom"];
         </div>
         <div v-if="settingsStore.theme === 'custom'" class="hint" style="margin-top: var(--spacing-sm);">
           Place your custom CSS at <code>{{ '/app/data/themes/custom.css' }}</code> in your container.
+        </div>
+        <div class="settings-row">
+          <div>
+            <label>Date Format</label>
+            <div class="hint">How article dates are displayed</div>
+          </div>
+          <select
+            class="date-format-select"
+            :value="settingsStore.dateFormat"
+            @change="setDateFormat(($event.target as HTMLSelectElement).value as DateFormat)"
+          >
+            <option v-for="f in dateFormats" :key="f" :value="f">
+              {{ DATE_FORMAT_LABELS[f] }}
+            </option>
+          </select>
         </div>
       </div>
 

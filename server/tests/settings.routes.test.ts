@@ -25,17 +25,17 @@ describe("settingsRoutes", () => {
 
   it("GET / creates default settings when none exist", async () => {
     db._queueGet(undefined);
-    db._queueReturning([{ theme: "light", markReadOnOpen: true }]);
+    db._queueReturning([{ theme: "light", markReadOnOpen: true, dateFormat: "relative" }]);
     const res = await request(app(), "GET", "/");
     expect(res.status).toBe(200);
-    expect(res.data).toEqual({ theme: "light", markReadOnOpen: true });
+    expect(res.data).toEqual({ theme: "light", markReadOnOpen: true, dateFormat: "relative" });
   });
 
   it("GET / returns existing settings", async () => {
-    db._queueGet({ theme: "dark", markReadOnOpen: false });
+    db._queueGet({ theme: "dark", markReadOnOpen: false, dateFormat: "long" });
     const res = await request(app(), "GET", "/");
     expect(res.status).toBe(200);
-    expect(res.data).toEqual({ theme: "dark", markReadOnOpen: false });
+    expect(res.data).toEqual({ theme: "dark", markReadOnOpen: false, dateFormat: "long" });
   });
 
   it("PUT / updates existing settings", async () => {

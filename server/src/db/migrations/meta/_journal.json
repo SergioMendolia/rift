@@ -8,6 +8,13 @@
       "when": 1783802707896,
       "tag": "0000_neat_stark_industries",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1783890099051,
+      "tag": "0001_secret_the_renegades",
+      "breakpoints": true
     }
   ]
 }

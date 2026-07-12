@@ -33,7 +33,9 @@ export const useArticlesStore = defineStore("articles", () => {
       params.set("saved", "true");
     }
 
-    if (hideRead.value) {
+    if (currentFilter.value.type === "saved") {
+      params.set("hideRead", "false");
+    } else if (hideRead.value) {
       params.set("hideRead", "true");
     } else {
       params.set("hideRead", "false");

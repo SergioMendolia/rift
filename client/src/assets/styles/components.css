@@ -412,6 +412,7 @@
 
 .article-view .article-content img {
   max-width: 100%;
+  height: auto;
   border-radius: var(--radius);
   margin: var(--spacing-md) 0;
 }
@@ -611,6 +612,27 @@
 .theme-option.active {
   border-color: var(--accent);
   background-color: var(--surface);
+}
+
+.date-format-select {
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  border: 2px solid var(--border);
+  background-color: var(--surface);
+  color: var(--text);
+  font-size: var(--font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+.date-format-select:hover {
+  border-color: var(--accent);
+}
+
+.date-format-select:focus {
+  outline: none;
+  border-color: var(--accent);
 }
 
 .user-list {
