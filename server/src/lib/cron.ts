@@ -51,8 +51,3 @@ export function registerCronJobs() {
 
   console.log(`[cron] Registered feed polling with schedule: ${env.pollCron}`);
 }
-    console.log(`[cron] Polling complete. Processed ${feedIds.length} feeds.`);
-  });
-
-  console.log(`[cron] Registered feed polling with schedule: ${env.pollCron}`);
-}

@@ -159,46 +159,4 @@ describe("discoverFeedUrl", () => {
       "Could not find an RSS feed",
     );
   });
-
-  it("rewrites a reddit subreddit URL to /.rss", async () => {
-    fetchMock.mockResolvedValueOnce(
-      mockResponse('<?xml version="1.0"?><rss></rss>', {
-        "content-type": "application/rss+xml",
-      }),
-    );
-
-    await expect(discover("https://www.reddit.com/r/selfhosted")).resolves.toBe(
-      "https://www.reddit.com/r/selfhosted/.rss",
-    );
-    expect(fetchMock).toHaveBeenCalledWith(
-      "https://www.reddit.com/r/selfhosted/.rss",
-      expect.objectContaining({ headers: expect.any(Object) }),
-    );
-  });
-
-  it("does not double-append .rss to a reddit URL that already has it", async () => {
-    fetchMock.mockResolvedValueOnce(
-      mockResponse('<?xml version="1.0"?><rss></rss>', {
-        "content-type": "application/rss+xml",
-      }),
-    );
-
-    await expect(
-      discover("https://www.reddit.com/r/selfhosted/.rss"),
-    ).resolves.toBe("https://www.reddit.com/r/selfhosted/.rss");
-  });
-
-  it("preserves reddit search query string when rewriting", async () => {
-    fetchMock.mockResolvedValueOnce(
-      mockResponse('<?xml version="1.0"?><rss></rss>', {
-        "content-type": "application/rss+xml",
-      }),
-    );
-
-    await expect(
-      discover("https://www.reddit.com/r/selfhosted/search?q=pihole&restrict_sr=1"),
-    ).resolves.toBe(
-      "https://www.reddit.com/r/selfhosted/search.rss?q=pihole&restrict_sr=1",
-    );
-  });
 });

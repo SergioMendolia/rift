@@ -53,37 +53,8 @@ async function fetchWithRetry(input: string, init?: RequestInit): Promise<Respon
   throw new Error("retry loop exited unexpectedly");
 }
 
-export function rewriteKnownSites(url: string): string {
-  try {
-    const u = new URL(url);
-    if (u.hostname.endsWith("reddit.com")) {
-      let path = u.pathname;
-      if (path.endsWith(".rss")) {
-        return `${u.origin}${path}${u.search}`;
-      }
-      const segments = path.split("/").filter(Boolean);
-      const last = segments[segments.length - 1];
-      if (last === "search") {
-        return `${u.origin}${path}.rss${u.search}`;
-      }
-      if (path === "/" || path === "") {
-        return `${u.origin}/.rss${u.search}`;
-      }
-      if (path.endsWith("/")) {
-        return `${u.origin}${path}.rss${u.search}`;
-      }
-      return `${u.origin}${path}/.rss${u.search}`;
-    }
-    return url;
-  } catch {
-    return url;
-  }
-}
-
 export async function discoverFeedUrl(url: string): Promise<string> {
-  const rewritten = rewriteKnownSites(url);
-
-  const response = await fetchWithRetry(rewritten, {
+  const response = await fetchWithRetry(url, {
     headers: { "User-Agent": env.userAgent },
     redirect: "follow",
   });
@@ -98,7 +69,7 @@ export async function discoverFeedUrl(url: string): Promise<string> {
     contentType.includes("atom") ||
     text.trimStart().startsWith("<?xml")
   ) {
-    return rewritten;
+    return url;
   }
 
   const linkMatches = text.match(FEED_LINK_RE) ?? [];
@@ -149,14 +120,11 @@ export async function subscribeToFeed(
 ): Promise<FeedDTO> {
   const normalizedUrl = url.trim();
 
-  let feedUrl = rewriteKnownSites(normalizedUrl);
-  const rewrittenByKnownSite = feedUrl !== normalizedUrl;
-  if (!rewrittenByKnownSite) {
-    try {
-      feedUrl = await discoverFeedUrl(feedUrl);
-    } catch {
-      // fall through; feedUrl is the original URL, parser.parseURL will give the real error
-    }
+  let feedUrl = normalizedUrl;
+  try {
+    feedUrl = await discoverFeedUrl(feedUrl);
+  } catch {
+    // fall through; feedUrl is the original URL, parser.parseURL will give the real error
   }
 
   let feed = await db.query.feeds.findFirst({
