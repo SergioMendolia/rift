@@ -745,6 +745,11 @@
   :root {
     --sidebar-width: 100%;
     --list-width: 100%;
+    --font-size-sm: 15px;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
   }
 
   .app-layout {
@@ -776,7 +781,8 @@
   }
 
   .article-view .article-content {
-    font-size: var(--font-size-base);
+    font-size: var(--font-size-lg);
+    line-height: 1.6;
     padding-bottom: 60px;
   }
 
