@@ -37,6 +37,18 @@ function isActive(filter: ArticleFilter): boolean {
   return JSON.stringify(filter) === JSON.stringify(currentFilter.value);
 }
 
+function feedVisible(feed: FeedDTO): boolean {
+  return !articlesStore.hideRead || feed.unreadCount > 0;
+}
+
+function folderFeeds(folderId: number | null): FeedDTO[] {
+  return (feedsStore.feedsByFolder.get(folderId) ?? []).filter(feedVisible);
+}
+
+function folderHasVisibleFeeds(folderId: number): boolean {
+  return folderFeeds(folderId).length > 0;
+}
+
 function goSettings() {
   router.push("/settings");
 }
@@ -104,6 +116,17 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
     <div class="sidebar-header">
       <h1>Rift</h1>
       <div style="display: flex; gap: 2px;">
+        <button
+          class="btn btn-ghost btn-icon"
+          :class="{ 'btn-primary': !articlesStore.hideRead }"
+          :title="articlesStore.hideRead ? 'Showing unread only — click to show all' : 'Showing all — click to hide read'"
+          @click="articlesStore.setHideRead(!articlesStore.hideRead)"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
         <button class="btn btn-ghost btn-icon" @click="goSettings" title="Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3" />
@@ -176,7 +199,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
         </div>
         <template v-for="folder in feedsStore.folders" :key="folder.id">
           <div
-            v-if="renamingFolderId === folder.id"
+            v-if="renamingFolderId === folder.id && folderHasVisibleFeeds(folder.id)"
             class="sidebar-folder"
             @click.stop
           >
@@ -197,7 +220,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
             </form>
           </div>
           <div
-            v-else
+            v-else-if="folderHasVisibleFeeds(folder.id)"
             class="sidebar-folder"
             :class="{ collapsed: props.collapsedFolders.has(folder.id), active: isActive({ type: 'folder', folderId: folder.id }) }"
           >
@@ -226,7 +249,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
             :class="{ collapsed: props.collapsedFolders.has(folder.id) }"
           >
             <template
-              v-for="feed in feedsStore.feedsByFolder.get(folder.id) ?? []"
+              v-for="feed in folderFeeds(folder.id)"
               :key="feed.id"
             >
               <div
@@ -262,7 +285,7 @@ async function deleteFolder(folderId: number, name: string, e: Event) {
         </template>
 
         <template
-          v-for="feed in feedsStore.feedsByFolder.get(null) ?? []"
+          v-for="feed in folderFeeds(null)"
           :key="feed.id"
         >
           <div

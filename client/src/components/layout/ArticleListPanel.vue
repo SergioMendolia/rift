@@ -129,17 +129,6 @@ async function refreshAll() {
       <div style="display: flex; gap: 2px; align-items: center;">
         <button
           class="btn btn-ghost btn-icon"
-          :class="{ 'btn-primary': !articlesStore.hideRead }"
-          :title="articlesStore.hideRead ? 'Showing unread only — click to show all' : 'Showing all — click to hide read'"
-          @click="articlesStore.setHideRead(!articlesStore.hideRead)"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-            <circle cx="12" cy="12" r="3" />
-          </svg>
-        </button>
-        <button
-          class="btn btn-ghost btn-icon"
           title="Refresh all feeds"
           @click="refreshAll()"
         >

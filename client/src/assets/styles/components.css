@@ -182,14 +182,14 @@
   display: none;
 }
 
-.feed-action-btn {
+.btn.feed-action-btn {
   padding: 2px;
   border-radius: var(--radius-sm);
   opacity: 0.6;
   transition: opacity var(--transition);
 }
 
-.feed-action-btn:hover {
+.btn.feed-action-btn:hover {
   opacity: 1;
   background-color: var(--surface-active);
 }
