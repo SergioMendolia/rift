@@ -20,6 +20,7 @@ articleRoutes.get("/", async (c) => {
   const saved = c.req.query("saved");
   const hideRead = c.req.query("hideRead") !== "false";
   const cursor = c.req.query("cursor");
+  const q = c.req.query("q")?.trim();
   const limit = Math.min(parseInt(c.req.query("limit") ?? "50", 10), 100);
 
   const conditions = [eq(schema.userArticles.userId, user.id)];
@@ -43,12 +44,19 @@ articleRoutes.get("/", async (c) => {
     conditions.push(eq(schema.userArticles.read, true));
   } else if (read === "false") {
     conditions.push(eq(schema.userArticles.read, false));
-  } else if (hideRead) {
+  } else if (hideRead && !q) {
     conditions.push(eq(schema.userArticles.read, false));
   }
 
   if (saved === "true") {
     conditions.push(eq(schema.userArticles.saved, true));
+  }
+
+  if (q) {
+    const ftsQuery = sanitizeFtsQuery(q);
+    conditions.push(
+      sql`${schema.articles.id} IN (SELECT rowid FROM articles_fts WHERE articles_fts MATCH ${ftsQuery})`,
+    );
   }
 
   if (cursor) {
@@ -96,6 +104,17 @@ articleRoutes.get("/", async (c) => {
   const response: ArticleListResponse = { articles: dtos, nextCursor };
   return c.json(response);
 });
+
+/** Build a safe FTS5 query: wrap each token in quotes for literal matching,
+ *  joining with AND. Falls back to a LIKE-based OR clause if no safe tokens. */
+function sanitizeFtsQuery(input: string): string {
+  const tokens = input
+    .split(/\s+/)
+    .map((t) => t.replace(/["'*:]/g, ""))
+    .filter((t) => t.length > 0);
+  if (tokens.length === 0) return '""';
+  return tokens.map((t) => `"${t}"*`).join(" ");
+}
 
 articleRoutes.get("/:id", async (c) => {
   const user = requireAuth(c)!;

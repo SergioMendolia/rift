@@ -32,6 +32,22 @@ let startY = 0;
 let isSwiping = false;
 let isHorizontal = false;
 
+const searchInput = ref("");
+let searchDebounce: ReturnType<typeof setTimeout> | null = null;
+
+function onSearchInput() {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    articlesStore.setSearchQuery(searchInput.value);
+  }, 300);
+}
+
+function clearSearch() {
+  searchInput.value = "";
+  if (searchDebounce) clearTimeout(searchDebounce);
+  articlesStore.clearSearch();
+}
+
 function onTouchStart(e: TouchEvent, articleId: number) {
   startX = e.touches[0].clientX;
   startY = e.touches[0].clientY;
@@ -82,8 +98,64 @@ function onTouchEnd(articleId: number) {
   swipeOffset.value = 0;
 }
 
+// --- Pull-to-refresh ---
+const pullDistance = ref(0);
+const pullRefreshing = ref(false);
+const PULL_THRESHOLD = 70;
+const PULL_MAX = 100;
+let pullStartY = 0;
+let pullActive = false;
+const listContent = ref<HTMLElement | null>(null);
+
+function onContentTouchStart(e: TouchEvent) {
+  if (pullRefreshing.value) return;
+  const el = listContent.value;
+  if (!el || el.scrollTop > 0) {
+    pullActive = false;
+    return;
+  }
+  pullStartY = e.touches[0].clientY;
+  pullActive = true;
+}
+
+function onContentTouchMove(e: TouchEvent) {
+  if (!pullActive || pullRefreshing.value) return;
+  const el = listContent.value;
+  if (!el || el.scrollTop > 0) {
+    pullActive = false;
+    pullDistance.value = 0;
+    return;
+  }
+  const dy = e.touches[0].clientY - pullStartY;
+  if (dy <= 0) {
+    pullDistance.value = 0;
+    return;
+  }
+  e.preventDefault();
+  pullDistance.value = Math.min(dy * 0.5, PULL_MAX);
+}
+
+async function onContentTouchEnd() {
+  if (!pullActive) return;
+  pullActive = false;
+  if (pullDistance.value >= PULL_THRESHOLD) {
+    pullRefreshing.value = true;
+    pullDistance.value = PULL_THRESHOLD;
+    if (navigator.vibrate) navigator.vibrate(15);
+    try {
+      await refreshAll();
+    } finally {
+      pullRefreshing.value = false;
+      pullDistance.value = 0;
+    }
+  } else {
+    pullDistance.value = 0;
+  }
+}
+
 const headerTitle = computed(() => {
   const filter = articlesStore.currentFilter;
+  if (articlesStore.searchQuery) return `Search: "${articlesStore.searchQuery}"`;
   if (filter.type === "all") return "All Items";
   if (filter.type === "saved") return "Saved";
   if (filter.type === "feed") {
@@ -138,7 +210,43 @@ async function refreshAll() {
         </button>
       </div>
     </div>
-    <div class="article-list-content">
+    <div class="article-search-bar">
+      <input
+        type="search"
+        v-model="searchInput"
+        placeholder="Search articles…"
+        @input="onSearchInput"
+        @keyup.enter="onSearchInput"
+      />
+      <button
+        v-if="searchInput"
+        class="btn btn-ghost btn-icon search-clear"
+        title="Clear search"
+        @click="clearSearch"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div
+      ref="listContent"
+      class="article-list-content"
+      :style="{ transform: pullDistance > 0 ? `translateY(${pullDistance}px)` : '', transition: pullActive ? 'none' : 'transform 200ms ease' }"
+      @touchstart.passive="onContentTouchStart"
+      @touchmove.passive="false"
+      @touchmove="onContentTouchMove"
+      @touchend="onContentTouchEnd"
+      @touchcancel="onContentTouchEnd"
+    >
+      <div class="pull-to-refresh-indicator" :class="{ active: pullRefreshing }" :style="{ height: pullDistance + 'px', opacity: pullDistance > 0 ? 1 : 0 }">
+        <svg v-if="!pullRefreshing" class="pull-arrow" :class="{ ready: pullDistance >= PULL_THRESHOLD }" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 5v14M19 12l-7 7-7-7" />
+        </svg>
+        <svg v-else class="pull-spinner" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+        </svg>
+      </div>
       <div v-if="articles.length === 0 && !articlesStore.loading" class="empty-state">
         <div class="icon">No articles</div>
         <p>No articles to show here.</p>

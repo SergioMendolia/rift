@@ -6,6 +6,7 @@ A clean, efficient, self-hostable RSS reader.
 
 - Multi-user accounts (admin-created)
 - Feed subscription
+- Full-text search across article titles, summaries, and content
 - Folders for organizing feeds
 - Read/unread state, save for later
 - Dark mode / theming (CSS-only, custom themes supported)
@@ -110,6 +111,7 @@ Environment variables:
 | `DB_PATH` | `/app/data/rift.db` | SQLite database path |
 | `DATA_DIR` | `/app/data` | Data directory (for custom themes) |
 | `POLL_CRON` | `*/30 * * * *` | Cron schedule for feed polling |
+| `CLEANUP_CRON` | `0 3 * * *` | Cron schedule for deleting unsaved articles older than 1 year |
 | `OIDC_ISSUER` | - | Optional OIDC issuer URL |
 | `OIDC_CLIENT_ID` | - | Optional OIDC client ID |
 | `OIDC_CLIENT_SECRET` | - | Optional OIDC client secret |

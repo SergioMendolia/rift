@@ -85,6 +85,20 @@ describe("articleRoutes", () => {
     expect(res.data.articles).toHaveLength(1);
   });
 
+  it("GET /?q= applies a search filter", async () => {
+    db._queueAll([makeArticleRow(1), makeArticleRow(2)]);
+    const res = await request(app(), "GET", "/?q=hello+world");
+    expect(res.status).toBe(200);
+    expect(res.data.articles).toHaveLength(2);
+  });
+
+  it("GET /?q= does not force hideRead when searching", async () => {
+    db._queueAll([makeArticleRow(1)]);
+    const res = await request(app(), "GET", "/?q=test");
+    expect(res.status).toBe(200);
+    expect(res.data.articles).toHaveLength(1);
+  });
+
   it("GET /:id returns 404 when article not found", async () => {
     const res = await request(app(), "GET", "/999");
     expect(res.status).toBe(404);

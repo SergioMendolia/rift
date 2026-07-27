@@ -106,3 +106,7 @@ export interface UpdateSettingsRequest {
   markReadOnOpen?: boolean;
   dateFormat?: DateFormat;
 }
+
+export interface SearchRequest {
+  q: string;
+}

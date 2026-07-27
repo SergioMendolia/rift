@@ -166,4 +166,39 @@ describe("useArticlesStore", () => {
     expect(store.hideRead).toBe(false);
     expect(store.articles).toHaveLength(0);
   });
+
+  it("setSearchQuery sets q param and reloads", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ articles: [makeArticle(1)], nextCursor: null }));
+    const auth = await setupAuth();
+    const { useArticlesStore } = await import("../src/stores/articles");
+    const store = useArticlesStore();
+    await store.setSearchQuery("vue tips");
+    expect(store.searchQuery).toBe("vue tips");
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain("q=vue+tips");
+    expect(store.articles).toHaveLength(1);
+  });
+
+  it("clearSearch empties the query and reloads", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ articles: [], nextCursor: null }));
+    const auth = await setupAuth();
+    const { useArticlesStore } = await import("../src/stores/articles");
+    const store = useArticlesStore();
+    store.searchQuery = "old";
+    await store.clearSearch();
+    expect(store.searchQuery).toBe("");
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).not.toContain("q=");
+  });
+
+  it("loadArticles sends q when searchQuery is set", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ articles: [], nextCursor: null }));
+    const auth = await setupAuth();
+    const { useArticlesStore } = await import("../src/stores/articles");
+    const store = useArticlesStore();
+    store.searchQuery = "rust";
+    await store.loadArticles(true);
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain("q=rust");
+  });
 });

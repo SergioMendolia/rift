@@ -17,6 +17,7 @@ export const useArticlesStore = defineStore("articles", () => {
   const loading = ref(false);
   const currentFilter = ref<ArticleFilter>({ type: "all" });
   const hideRead = ref(true);
+  const searchQuery = ref("");
 
   async function loadArticles(reset = false) {
     const auth = useAuthStore();
@@ -39,6 +40,10 @@ export const useArticlesStore = defineStore("articles", () => {
       params.set("hideRead", "true");
     } else {
       params.set("hideRead", "false");
+    }
+
+    if (searchQuery.value.trim()) {
+      params.set("q", searchQuery.value.trim());
     }
 
     if (!reset && nextCursor.value) {
@@ -148,6 +153,18 @@ export const useArticlesStore = defineStore("articles", () => {
     return loadArticles(true);
   }
 
+  function setSearchQuery(query: string) {
+    searchQuery.value = query;
+    articles.value = [];
+    nextCursor.value = null;
+    currentArticle.value = null;
+    return loadArticles(true);
+  }
+
+  function clearSearch() {
+    return setSearchQuery("");
+  }
+
   return {
     articles,
     currentArticle,
@@ -155,6 +172,7 @@ export const useArticlesStore = defineStore("articles", () => {
     loading,
     currentFilter,
     hideRead,
+    searchQuery,
     loadArticles,
     selectArticle,
     loadArticle,
@@ -162,5 +180,7 @@ export const useArticlesStore = defineStore("articles", () => {
     toggleSaved,
     setFilter,
     setHideRead,
+    setSearchQuery,
+    clearSearch,
   };
 });

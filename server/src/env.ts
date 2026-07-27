@@ -15,6 +15,7 @@ export const env = {
   jwtSecret: required("JWT_SECRET", "dev-secret-change-in-production"),
   dbPath: optional("DB_PATH", "./data/rift.db")!,
   pollCron: optional("POLL_CRON", "*/30 * * * *")!,
+  cleanupCron: optional("CLEANUP_CRON", "0 3 * * *")!,
   dataDir: optional("DATA_DIR", "./data")!,
   userAgent: optional("USER_AGENT", "Rift/1.0 ( https://github.com/SergioMendolia/rift; by Someone)"),
   oidcIssuer: optional("OIDC_ISSUER"),
